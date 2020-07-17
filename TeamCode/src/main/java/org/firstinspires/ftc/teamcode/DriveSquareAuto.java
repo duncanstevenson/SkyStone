@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -48,7 +49,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Basic: Iterative OpMode", group="Iterative Opmode")
+@Autonomous(name="DriveSquare", group="Testing")
 //@Disabled
 public class DriveSquareAuto extends OpMode
 {
@@ -58,6 +59,7 @@ public class DriveSquareAuto extends OpMode
     private DcMotor leftDriveB = null;
     private DcMotor rightDriveF = null;
     private DcMotor rightDriveB = null;
+    private int ExecutionPoint = 0;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -85,6 +87,11 @@ public class DriveSquareAuto extends OpMode
         leftDriveB.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightDriveF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightDriveB.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        leftDriveF.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftDriveB.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightDriveF.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightDriveB.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
@@ -149,6 +156,10 @@ public class DriveSquareAuto extends OpMode
         leftDriveB.setPower(0);
         rightDriveF.setPower(0);
         rightDriveB.setPower(0);
+    }
+
+    private boolean checkAtTarget() {
+        return true;
     }
 
 }
