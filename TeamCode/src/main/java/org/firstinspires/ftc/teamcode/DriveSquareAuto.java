@@ -60,6 +60,7 @@ public class DriveSquareAuto extends OpMode
     private DcMotor rightDriveF = null;
     private DcMotor rightDriveB = null;
     private int ExecutionPoint = 0;
+    private HardwareBase robot = new HardwareBase(false);
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -67,32 +68,7 @@ public class DriveSquareAuto extends OpMode
     @Override
     public void init() {
         telemetry.addData("Status", "Initialized");
-
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-        leftDriveF  = hardwareMap.get(DcMotor.class, "LDF");
-        leftDriveB  = hardwareMap.get(DcMotor.class, "LDB");
-        rightDriveF = hardwareMap.get(DcMotor.class, "RDF");
-        rightDriveB = hardwareMap.get(DcMotor.class, "RDB");
-
-        // Most robots need the motor on one side to be reversed to drive forward
-        // Reverse the motor that runs backwards when connected directly to the battery
-        leftDriveF.setDirection(DcMotor.Direction.REVERSE);
-        leftDriveB.setDirection(DcMotor.Direction.REVERSE);
-        rightDriveF.setDirection(DcMotor.Direction.FORWARD);
-        rightDriveB.setDirection(DcMotor.Direction.FORWARD);
-
-        leftDriveF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftDriveB.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightDriveF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightDriveB.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        leftDriveF.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftDriveB.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightDriveF.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightDriveB.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
+        robot.drive.initMotors(hardwareMap);
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
     }
@@ -117,34 +93,28 @@ public class DriveSquareAuto extends OpMode
      */
     @Override
     public void loop() {
-        // Setup a variable for each drive wheel to save power level for telemetry
-        double leftPower;
-        double rightPower;
 
-        // Choose to drive using either Tank Mode, or POV Mode
-        // Comment out the method that's not used.  The default below is POV.
-
-        // POV Mode uses left stick to go forward, and right stick to turn.
-        // - This uses basic math to combine motions and is easier to drive straight.
-//        double drive = -gamepad1.left_stick_y;
-//        double turn  =  gamepad1.right_stick_x;
-//        leftPower    = Range.clip(drive + turn, -1.0, 1.0) ;
-//        rightPower   = Range.clip(drive - turn, -1.0, 1.0) ;
-
-        // Tank Mode uses one stick to control each wheel.
-        // - This requires no math, but it is hard to drive forward slowly and keep straight.
-         leftPower  = -gamepad1.left_stick_y ;
-         rightPower = -gamepad1.right_stick_y ;
-
-        // Send calculated power to wheels
-        leftDriveF.setPower(leftPower);
-        leftDriveB.setPower(leftPower);
-        rightDriveF.setPower(rightPower);
-        rightDriveB.setPower(rightPower);
+        if(ExecutionPoint == 0){
+            robot.drive.POSDrive(1, 2000, 2000);
+            ExecutionPoint++;
+        }else if(ExecutionPoint == 1 && robot.drive.atTarget()){
+            robot.drive.ResetEnc();
+            ExecutionPoint++;
+        }else if(ExecutionPoint == 2){
+            robot.drive.POSDrive(1, 1200, 0);
+            ExecutionPoint++;
+        }else if(ExecutionPoint == 3 && robot.drive.atTarget()){
+            robot.drive.ResetEnc();
+            ExecutionPoint = 0;
+        }
 
         // Show the elapsed game time and wheel power.
         telemetry.addData("Status", "Run Time: " + runtime.toString());
-        telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
+        telemetry.addData("PositionFL", "" + robot.drive.leftFPos());
+        telemetry.addData("PositionBL", "" + robot.drive.leftBPos());
+        telemetry.addData("PositionFR", "" + robot.drive.rightFPos());
+        telemetry.addData("PositionBR", "" + robot.drive.rightBPos());
+        telemetry.addData("expoint", "" + ExecutionPoint);
     }
 
     /*
@@ -152,14 +122,7 @@ public class DriveSquareAuto extends OpMode
      */
     @Override
     public void stop() {
-        leftDriveF.setPower(0);
-        leftDriveB.setPower(0);
-        rightDriveF.setPower(0);
-        rightDriveB.setPower(0);
-    }
-
-    private boolean checkAtTarget() {
-        return true;
+        robot.drive.OPDrive(0,0);
     }
 
 }
