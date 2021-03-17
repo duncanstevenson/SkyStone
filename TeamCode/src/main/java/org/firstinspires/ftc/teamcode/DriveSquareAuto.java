@@ -29,11 +29,18 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import android.util.Log;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import net.frogbots.ftcopmodetunercommon.opmode.TunableOpMode;
+
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -51,7 +58,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Autonomous(name="DriveSquare", group="Testing")
 //@Disabled
-public class DriveSquareAuto extends OpMode
+public class DriveSquareAuto extends TunableOpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -60,6 +67,8 @@ public class DriveSquareAuto extends OpMode
     private DcMotor rightDriveF = null;
     private DcMotor rightDriveB = null;
     private int ExecutionPoint = 0;
+    private double lastTime;
+    private double looptime = 0;
     private HardwareBase robot = new HardwareBase(false);
 
     /*
@@ -69,6 +78,7 @@ public class DriveSquareAuto extends OpMode
     public void init() {
         telemetry.addData("Status", "Initialized");
         robot.drive.initMotors(hardwareMap);
+        lastTime = (double) runtime.now(TimeUnit.MILLISECONDS);
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
     }
@@ -78,6 +88,10 @@ public class DriveSquareAuto extends OpMode
      */
     @Override
     public void init_loop() {
+        looptime = Math.abs((double) runtime.now(TimeUnit.MILLISECONDS) - lastTime);
+        lastTime = (double) runtime.now(TimeUnit.MILLISECONDS);
+        telemetry.addData("DriveP", ""+ robot.drive.DriveP);
+        robot.drive.DriveP = getDouble("DriveP");
     }
 
     /*
@@ -86,6 +100,7 @@ public class DriveSquareAuto extends OpMode
     @Override
     public void start() {
         runtime.reset();
+        robot.drive.ResetEnc();
     }
 
     /*
@@ -93,17 +108,42 @@ public class DriveSquareAuto extends OpMode
      */
     @Override
     public void loop() {
+        robot.drive.DriveP = getDouble("DriveP");
+        robot.drive.DriveI = getDouble("DriveI");
+        robot.drive.DriveD = getDouble("DriveD");
+        robot.drive.DriveE = getInt("DriveE");
+        robot.drive.UpdateDrivePID();
+        looptime = Math.abs((double) runtime.now(TimeUnit.MILLISECONDS) - lastTime);
+        lastTime = (double) runtime.now(TimeUnit.MILLISECONDS);
 
+//        if(ExecutionPoint == 0){
+//            robot.drive.POSDrive(1, 2000, 2000);
+//            ExecutionPoint++;
+//        }else if(ExecutionPoint == 1 && robot.drive.atTargetPOS()){
+//            robot.drive.ResetEnc();
+//            ExecutionPoint++;
+//        }else if(ExecutionPoint == 2){
+//            robot.drive.POSDrive(1, 1200, 0);
+//            ExecutionPoint++;
+//        }else if(ExecutionPoint == 3 && robot.drive.atTargetPOS()){
+//            robot.drive.ResetEnc();
+//            ExecutionPoint = 0;
+//        }
         if(ExecutionPoint == 0){
-            robot.drive.POSDrive(1, 2000, 2000);
-            ExecutionPoint++;
-        }else if(ExecutionPoint == 1 && robot.drive.atTarget()){
+            robot.drive.PIDDrive(1, 3000, 3000, looptime);
+            if(robot.drive.atTargetPID()){
+                Log.e("DriveSquareAuto", "inc expoint");
+                ExecutionPoint++;
+            }
+        }else if(ExecutionPoint == 1){
             robot.drive.ResetEnc();
             ExecutionPoint++;
         }else if(ExecutionPoint == 2){
-            robot.drive.POSDrive(1, 1200, 0);
-            ExecutionPoint++;
-        }else if(ExecutionPoint == 3 && robot.drive.atTarget()){
+            robot.drive.PIDDrive(1, -3000, -3000, looptime);
+            if(robot.drive.atTargetPID()){
+                ExecutionPoint++;
+            }
+        }else if(ExecutionPoint == 3){
             robot.drive.ResetEnc();
             ExecutionPoint = 0;
         }
@@ -114,6 +154,7 @@ public class DriveSquareAuto extends OpMode
         telemetry.addData("PositionBL", "" + robot.drive.leftBPos());
         telemetry.addData("PositionFR", "" + robot.drive.rightFPos());
         telemetry.addData("PositionBR", "" + robot.drive.rightBPos());
+        telemetry.addData("DriveP", ""+ robot.drive.DriveP);
         telemetry.addData("expoint", "" + ExecutionPoint);
     }
 

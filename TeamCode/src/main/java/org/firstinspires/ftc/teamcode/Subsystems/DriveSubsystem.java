@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.R;
+import org.firstinspires.ftc.teamcode.utils.PID;
 
 import java.sql.RowId;
 import java.util.HashMap;
@@ -14,8 +15,16 @@ public class DriveSubsystem {
     private DcMotor rightDriveF = null;
     private DcMotor rightDriveB = null;
     private boolean isAuto;
+    public double DriveP = 1;
+    public double DriveI = 0;
+    public double DriveD = 0;
+    public int DriveE = 3;
+    private PID LDFPID = new PID(DriveP, DriveI, DriveD, DriveE, 1);
+    private PID LDBPID = new PID(DriveP, DriveI, DriveD, DriveE, 1);
+    private PID RDFPID = new PID(DriveP, DriveI, DriveD, DriveE, 1);
+    private PID RDBPID = new PID(DriveP, DriveI, DriveD, DriveE, 1);
 
-    public DriveSubsystem(boolean autonomous){
+    public DriveSubsystem(boolean autonomous) {
         isAuto = autonomous;
     }
 
@@ -49,7 +58,7 @@ public class DriveSubsystem {
         rightDriveB.setPower(Right);
     }
 
-    public void POSDrive(double Speed, int LeftPos, int RightPos){
+    public void POSDrive(double Speed, int LeftPos, int RightPos) {
         leftDriveF.setTargetPosition(LeftPos);
         leftDriveF.setPower(Math.abs(Speed));
         leftDriveB.setTargetPosition(LeftPos);
@@ -64,26 +73,64 @@ public class DriveSubsystem {
         rightDriveF.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         rightDriveB.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
-    public boolean atTarget(){
+
+    public void PIDDrive(double Speed, int LeftPos, int RightPos, double looptime) {
+        leftDriveF.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftDriveB.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightDriveF.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightDriveB.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        LDFPID.UpdateMaxSpeed(Speed);
+        LDBPID.UpdateMaxSpeed(Speed);
+        RDFPID.UpdateMaxSpeed(Speed);
+        RDBPID.UpdateMaxSpeed(Speed);
+
+        LDFPID.SetTarget(LeftPos);
+        LDBPID.SetTarget(LeftPos);
+        RDFPID.SetTarget(RightPos);
+        RDBPID.SetTarget(RightPos);
+
+        leftDriveF.setPower(LDFPID.Calculate(leftFPos(), looptime));
+        leftDriveB.setPower(LDBPID.Calculate(leftBPos(), looptime));
+        rightDriveF.setPower(RDFPID.Calculate(rightFPos(), looptime));
+        rightDriveB.setPower(RDBPID.Calculate(rightBPos(), looptime));
+    }
+
+    public boolean atTargetPID() {
+        return LDFPID.atTarget() && LDBPID.atTarget() && RDFPID.atTarget() && RDBPID.atTarget();
+    }
+
+    public boolean atTargetPOS() {
         return leftDriveF.isBusy() && leftDriveB.isBusy() && rightDriveF.isBusy() && rightDriveB.isBusy();
     }
-    public int leftFPos(){
+
+    public int leftFPos() {
         return leftDriveF.getCurrentPosition();
     }
-    public int leftBPos(){
+
+    public int leftBPos() {
         return leftDriveB.getCurrentPosition();
     }
-    public int rightFPos(){
+
+    public int rightFPos() {
         return rightDriveF.getCurrentPosition();
     }
-    public int rightBPos(){
+
+    public int rightBPos() {
         return rightDriveB.getCurrentPosition();
     }
 
-    public void ResetEnc(){
+    public void ResetEnc() {
         leftDriveF.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftDriveB.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightDriveF.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightDriveB.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
+    public void UpdateDrivePID() {
+        LDFPID.UpdatePIDE(DriveP, DriveI, DriveD, DriveE);
+        LDBPID.UpdatePIDE(DriveP, DriveI, DriveD, DriveE);
+        RDFPID.UpdatePIDE(DriveP, DriveI, DriveD, DriveE);
+        RDBPID.UpdatePIDE(DriveP, DriveI, DriveD, DriveE);
     }
 }
